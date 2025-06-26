@@ -28,7 +28,7 @@ A simple yet powerful voice assistant web app built with Flask, Google Gemini AP
 
 ## 🚀 Live Demo
 
-> Coming soon: Hosted on [Render](https://render.com)
+Hosted on [Render](https://voice-assistant-djpx.onrender.com)
 
 ---
 
