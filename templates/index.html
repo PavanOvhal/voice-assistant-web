@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voice Assistant</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+
+<body>
+    <div class="container">
+        <h1>Voice Assistant</h1>
+        <div id="chat-box" class="chat-box"></div>
+
+        <div class="controls">
+            <button id="micBtn">🎤 Speak</button>
+            <div class="waveform" id="waveform"></div>
+        </div>
+
+        <div class="input-container">
+            <input type="text" id="textInput" placeholder="Type your question..." />
+            <button onclick="sendText()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const micBtn = document.getElementById("micBtn");
+        const waveform = document.getElementById("waveform");
+        let introGiven = false;
+
+        function appendMessage(sender, message) {
+            const msg = document.createElement("div");
+            msg.className = sender;
+            msg.textContent = `${sender === 'user' ? 'You' : 'Assistant'}: ${message}`;
+            chatBox.appendChild(msg);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            window.speechSynthesis.cancel(); // Stop previous
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function sendQuery(text) {
+            appendMessage("user", text);
+
+            fetch("/ask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: text })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    let reply = data.response;
+                    if (!introGiven) {
+                        reply = "HI, I am your voice assistant developed by Pavan Ovhal. "+ "How can i assist you today?";
+                        introGiven = true;
+                    }
+                    appendMessage("assistant", reply);
+                    speak(reply);
+                });
+        }
+
+        function sendText() {
+            const text = document.getElementById("textInput").value.trim();
+            if (!text) return;
+            document.getElementById("textInput").value = "";
+            sendQuery(text);
+        }
+
+        micBtn.addEventListener("click", () => {
+            waveform.classList.add("listening");
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Speech recognition not supported on this browser.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = "en-US";
+            recognition.start();
+
+            recognition.onresult = function (event) {
+                const text = event.results[0][0].transcript;
+                waveform.classList.remove("listening");
+                sendQuery(text);
+            };
+
+            recognition.onerror = function (event) {
+                waveform.classList.remove("listening");
+                console.error("Speech recognition error:", event.error);
+                alert("Could not recognize your voice. (" + event.error + ")");
+        
+
+        }
+    });
+    document.getElementById("textInput").addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        sendText();
+      }
+    });
+    </script>
+    <footer style="text-align: center; margin-top: 20px; color: #ccc; font-size: 14px;">
+  &copy; 2025 Pavan Ovhal. All rights reserved.
+</footer>
+
+</body>
+
+</html>
